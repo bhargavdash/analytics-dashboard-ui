@@ -1,25 +1,26 @@
-import { Button } from "@/components/ui/button"
-import { StatCard } from "@/components/dashboard/widgets/StatCard"
-import { PieChart } from "./components/dashboard/widgets/PieChart"
+import { useEffect } from 'react'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { AppSidebar } from '@/components/dashboard/AppSidebar'
+import { useDashboardStore } from '@/store/useDashboardStore'
+import { SEED_DASHBOARDS } from '@/data/seed'
 
 function App() {
+  const setDashboards = useDashboardStore((state) => state.setDashboards)
+
+  // Seed store on first mount.
+  // Sprint 4: replace this with an API call to load saved dashboards.
+  useEffect(() => {
+    setDashboards(SEED_DASHBOARDS)
+  }, [setDashboards])
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center">
-      <Button>Click Me</Button>
-      <PieChart 
-        title="Revenue By Region" 
-        payload={{
-          slices:[
-            { name:"NA", value:48, color:"#8884d8" },
-            { name:"EU", value:28, color:"#82ca9d" },
-            { name:"APAC", value:16, color:"#201b75" },
-            { name:"LATAM", value:8,  color:"#2b8b53"  },
-          ]
-        }}
-      />
-      <StatCard title="YTD Revenue" payload={{ value:"$3.42M", delta:"+18.4%", up:true,  vs:"vs 2025"  }} />
-    </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <SidebarTrigger />
+        {/* Dashboard or EmptyState renders here */}
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
 

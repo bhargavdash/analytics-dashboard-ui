@@ -1,7 +1,5 @@
-// zustand store for global state management of the dashboard
 import { create } from 'zustand';
-
-type Dashboard = any; // replace with actual type of dashboard
+import type { Dashboard } from '../types';
 
 type DashboardStore = {
     view: 'empty' | 'dash';
