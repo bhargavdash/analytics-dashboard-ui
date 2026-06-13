@@ -14,31 +14,21 @@ type WidgetProps = {
 // and renders the exact component with the exact payload shape.
 // TypeScript guarantees payload type correctness in each branch.
 export const Widget = ({ w }: WidgetProps) => {
-    const colSpan = `col-span-${w.span}`;
-
-    // stat_card has its own card shell — different visual structure
     if (w.type === 'stat_card') {
-        return (
-            <div className={colSpan}>
-                <StatCard title={w.title} payload={w.payload} />
-            </div>
-        );
+        return <StatCard title={w.title} payload={w.payload} />;
     }
 
-    // All other widgets share a card shell with a header row
     return (
-        <div className={colSpan}>
-            <Card className="h-full">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">{w.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {w.type === 'line_chart' && <LineChart title={w.title} payload={w.payload} />}
-                    {w.type === 'bar_chart'  && <BarChart  title={w.title} payload={w.payload} />}
-                    {w.type === 'pie_chart'  && <PieChart  title={w.title} payload={w.payload} />}
-                    {w.type === 'table'      && <TableWidget payload={w.payload} />}
-                </CardContent>
-            </Card>
-        </div>
+        <Card className="h-full">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{w.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {w.type === 'line_chart' && <LineChart title={w.title} payload={w.payload} />}
+                {w.type === 'bar_chart'  && <BarChart  title={w.title} payload={w.payload} />}
+                {w.type === 'pie_chart'  && <PieChart  title={w.title} payload={w.payload} />}
+                {w.type === 'table'      && <TableWidget payload={w.payload} />}
+            </CardContent>
+        </Card>
     );
 }
