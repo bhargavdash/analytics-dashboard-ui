@@ -17,7 +17,7 @@ export const AppSidebar = () => {
     return (
         <Sidebar>
             <SidebarHeader className="border-b px-4 py-3">
-                <p className="text-sm font-semibold">Helix - POC</p>
+                <p className="text-sm font-semibold">Helix {"\u00A0"}{"\u2022"}{"\u00A0"} POC</p>
             </SidebarHeader>
 
             <SidebarContent className="px-2 py-3 flex flex-col gap-3">

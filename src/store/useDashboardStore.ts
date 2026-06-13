@@ -29,7 +29,7 @@ export const useDashboardStore = create<DashboardStore>()((set) => ({
     reasoningOpen: false,
     isStreaming: false,
     shownWidgetCount: 0,
-    theme: 'light',
+    theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
 
     selectDashboard: (id: string | null) => set({
         activeId: id,
@@ -40,10 +40,6 @@ export const useDashboardStore = create<DashboardStore>()((set) => ({
     toggleReasoningOpen: () => set((state) => ({ reasoningOpen: !state.reasoningOpen })),
     setStreaming: (isStreaming) => set({ isStreaming }),
     setShownWidgetCount: (count) => set({ shownWidgetCount: count }),
-    toggleTheme: () => set((state) => {
-    const next = state.theme === 'light' ? 'dark' : 'light'
-    document.documentElement.classList.toggle('dark', next === 'dark')
-    return { theme: next }
-    }),
+    toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
 
 }))
