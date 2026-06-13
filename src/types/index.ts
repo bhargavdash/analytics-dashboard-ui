@@ -14,10 +14,16 @@ export interface StatCardPayload {
     vs?: string;
 }
 
+// Row-object format — mirrors SQL query results directly.
+// The LLM emits only the spec (xKey, series, columns, unit).
+// The backend attaches `data` after running the SQL query.
+export type DataRow = Record<string, string | number | null>
+
 export interface LineChartPayload {
-    x: string[];
-    series: { name: string; color: string; data: (number | null)[]; dashed?: boolean }[];
-    unit: string;
+    data: DataRow[]
+    xKey: string
+    series: { key: string; color: string; label?: string; dashed?: boolean }[]
+    unit?: string
 }
 
 export interface PieChartPayload {
@@ -25,14 +31,15 @@ export interface PieChartPayload {
 }
 
 export interface BarChartPayload {
-    x: string[];
-    series: { name: string; color: string; data: (number | null)[] }[];
-    unit: string;
+    data: DataRow[]
+    xKey: string
+    series: { key: string; color: string; label?: string }[]
+    unit?: string
 }
 
 export interface TablePayload {
-    columns: string[];
-    rows: (string | number)[][];
+    data: DataRow[]
+    columns: { key: string; label: string }[]
 }
 
 export interface Dashboard {
