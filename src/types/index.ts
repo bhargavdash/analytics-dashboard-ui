@@ -51,6 +51,7 @@ export interface Dashboard {
     widgetCount: number;
     widgets: Widget[];
     summary?: ReactNode;
+    reasoningSteps: ReasoningStep[];
 }
 
 export interface ReasoningStep {

@@ -1,4 +1,4 @@
-import type { Dashboard, ReasoningStep } from '../types';
+import type { Dashboard } from '../types';
 
 export const SEED_DASHBOARDS: Dashboard[] = [
   {
@@ -9,6 +9,14 @@ export const SEED_DASHBOARDS: Dashboard[] = [
     createdAt: '2m ago',
     widgetCount: 6,
     summary: 'Revenue is up +18.4% YTD, driven primarily by Q1 momentum in the North region. April dipped 4.2% on weaker SMB conversion — recovers in May projection.',
+    reasoningSteps: [
+      { title: 'Parse intent',    tool: 'router',      detail: 'Classifying: "Show monthly revenue trend for 2026". Routing to data + viz agents. Target dataset: orders.', pills: ['intent: trend-analysis', 'dataset: orders'] },
+      { title: 'Generate SQL',    tool: 'sql.gen',     code: "SELECT strftime(order_date, '%Y-%m') AS month,\n       SUM(amount) AS revenue\n  FROM orders\n WHERE status = 'completed'\n   AND order_date >= '2026-01-01'\n GROUP BY 1\n ORDER BY 1;\n-- validated · read-only", pills: ['safe ✓', 'table: orders'] },
+      { title: 'Run query',       tool: 'duckdb.exec', detail: 'Executed against DuckDB. 8 rows returned in 14ms.', pills: ['rows: 8', '14ms', 'cache: miss'] },
+      { title: 'Pick widgets',    tool: 'a2ui.schema', detail: 'Trend over time → line_chart. Region split → pie_chart. Headline numbers → stat_card ×4.', pills: ['line_chart', 'pie_chart', 'stat_card ×4'] },
+      { title: 'Validate schema', tool: 'pydantic',    detail: 'All widget schemas validated. No arbitrary JSX, no untrusted code paths.', pills: ['6 widgets', '0 errors'] },
+      { title: 'Stream to UI',    tool: 'sse.emit',    detail: 'Streaming widget events to the frontend renderer.', pills: ['events: 12', 'verified ✓'] },
+    ],
     widgets: [
       { type: 'stat_card', span: 3, title: 'YTD Revenue',  payload: { value: '$3.42M', delta: '+18.4%', up: true,  vs: 'vs 2025' } },
       { type: 'stat_card', span: 3, title: 'Best Month',   payload: { value: 'March',  delta: '$612k',  up: true,  vs: '' } },
@@ -60,6 +68,13 @@ export const SEED_DASHBOARDS: Dashboard[] = [
     createdAt: 'Yesterday',
     widgetCount: 2,
     summary: 'March led with $612k profit, followed by August and July. Spread between #1 and #5 is $190k — fairly tight.',
+    reasoningSteps: [
+      { title: 'Parse intent',    tool: 'router',      detail: 'Classifying: "Show top 5 most profitable months". Routing to ranking query. Target dataset: orders.', pills: ['intent: ranking', 'dataset: orders'] },
+      { title: 'Generate SQL',    tool: 'sql.gen',     code: "SELECT strftime(order_date, '%Y-%m') AS month,\n       SUM(profit) AS profit\n  FROM orders\n GROUP BY 1\n ORDER BY profit DESC\n LIMIT 5;", pills: ['safe ✓', 'table: orders'] },
+      { title: 'Run query',       tool: 'duckdb.exec', detail: '5 rows returned in 9ms.', pills: ['rows: 5', '9ms', 'cache: miss'] },
+      { title: 'Pick widgets',    tool: 'a2ui.schema', detail: 'Ranked list → bar_chart. Detail view → table.', pills: ['bar_chart', 'table'] },
+      { title: 'Validate schema', tool: 'pydantic',    detail: 'All widget schemas validated.', pills: ['2 widgets', '0 errors'] },
+    ],
     widgets: [
       {
         type: 'bar_chart',
@@ -107,6 +122,13 @@ export const SEED_DASHBOARDS: Dashboard[] = [
     createdAt: '3 days ago',
     widgetCount: 3,
     summary: 'Electronics drove strongest revenue at 4.8× ROAS equivalent, while Clothing fell to 1.6×. Reallocate ~15% of Clothing spend to Electronics next quarter.',
+    reasoningSteps: [
+      { title: 'Parse intent',    tool: 'router',      detail: 'Classifying: "Compare marketing channel performance for Q1". Routing to aggregation query. Target dataset: orders.', pills: ['intent: comparison', 'dataset: orders'] },
+      { title: 'Generate SQL',    tool: 'sql.gen',     code: "SELECT category, region,\n       COUNT(*) AS orders,\n       SUM(revenue) AS revenue\n  FROM orders\n WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31'\n GROUP BY 1, 2;", pills: ['safe ✓', 'table: orders'] },
+      { title: 'Run query',       tool: 'duckdb.exec', detail: '20 rows returned in 11ms.', pills: ['rows: 20', '11ms', 'cache: miss'] },
+      { title: 'Pick widgets',    tool: 'a2ui.schema', detail: 'Category comparison → bar_chart. Region split → bar_chart. Full breakdown → table.', pills: ['bar_chart ×2', 'table'] },
+      { title: 'Validate schema', tool: 'pydantic',    detail: 'All widget schemas validated.', pills: ['3 widgets', '0 errors'] },
+    ],
     widgets: [
       {
         type: 'bar_chart',
@@ -169,6 +191,13 @@ export const SEED_DASHBOARDS: Dashboard[] = [
     createdAt: 'Last week',
     widgetCount: 3,
     summary: 'Monthly churn settled at 3.1%. Enterprise segment churns 4.2× less than Consumer. Consider an annual upgrade nudge in onboarding.',
+    reasoningSteps: [
+      { title: 'Parse intent',    tool: 'router',      detail: 'Classifying: "Analyze customer churn for the last 6 months". Routing to time-series + cohort query. Target dataset: customers.', pills: ['intent: cohort-analysis', 'dataset: customers'] },
+      { title: 'Generate SQL',    tool: 'sql.gen',     code: "SELECT segment,\n       strftime(churned_at, '%Y-%m') AS month,\n       COUNT(*) AS churned\n  FROM customers\n WHERE churned_at >= date('now', '-6 months')\n GROUP BY 1, 2;", pills: ['safe ✓', 'table: customers'] },
+      { title: 'Run query',       tool: 'duckdb.exec', detail: '18 rows returned in 17ms.', pills: ['rows: 18', '17ms', 'cache: miss'] },
+      { title: 'Pick widgets',    tool: 'a2ui.schema', detail: 'Churn over time → line_chart. Segment share → pie_chart. Cohort detail → table.', pills: ['line_chart', 'pie_chart', 'table'] },
+      { title: 'Validate schema', tool: 'pydantic',    detail: 'All widget schemas validated.', pills: ['3 widgets', '0 errors'] },
+    ],
     widgets: [
       {
         type: 'line_chart',
@@ -229,41 +258,3 @@ export const SEED_EXAMPLES = [
   { title: 'Top 5 customers by total spend',          dataset: 'customers' },
 ];
 
-export const SEED_REASONING: ReasoningStep[] = [
-  {
-    title: 'Parse intent',
-    tool: 'router',
-    detail: 'Classifying request: "Show monthly revenue trend for 2026". Routing to data + viz agents. Target dataset: orders.',
-    pills: ['intent: trend-analysis', 'dataset: orders'],
-  },
-  {
-    title: 'Generate SQL',
-    tool: 'sql.gen',
-    code: "SELECT strftime(order_date, '%Y-%m') AS month,\n       SUM(amount) AS revenue\n  FROM orders\n WHERE status = 'completed'\n   AND order_date >= '2026-01-01'\n GROUP BY 1\n ORDER BY 1;\n-- validated · read-only",
-    pills: ['safe ✓', 'table: orders'],
-  },
-  {
-    title: 'Run query',
-    tool: 'duckdb.exec',
-    detail: 'Executed against DuckDB. 8 rows returned in 14ms.',
-    pills: ['rows: 8', '14ms', 'cache: miss'],
-  },
-  {
-    title: 'Pick widgets',
-    tool: 'a2ui.schema',
-    detail: 'Trend over time + composition → line_chart for the series, pie_chart for region split, 4 stat_cards for headline numbers.',
-    pills: ['line_chart', 'pie_chart', 'stat_card ×4'],
-  },
-  {
-    title: 'Validate schema',
-    tool: 'pydantic',
-    detail: 'All widget schemas validated against WidgetSchema model. No arbitrary JSX, no untrusted code paths.',
-    pills: ['6 widgets', '0 errors'],
-  },
-  {
-    title: 'Stream to UI',
-    tool: 'sse.emit',
-    detail: 'Streaming widget events to the frontend renderer. Frontend selects the matching component per widget.type.',
-    pills: ['events: 12', 'verified ✓'],
-  },
-];
