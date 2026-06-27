@@ -1,26 +1,39 @@
-import { useDashboardStore } from '@/store/useDashboardStore'
+import { useChatStore } from '@/store/useChatStore'
 import { useConversations } from '@/hooks/useConversations'
 import { API_BASE } from '@/lib/api'
 import type { ReasoningStep } from '@/types'
 
+// Only one stream runs at a time — a module-level controller lets a Stop button
+// in any component abort the in-flight request.
+let activeController: AbortController | null = null
+
 export function useQueryStream() {
-    const setStreaming = useDashboardStore((s) => s.setStreaming)
-    const setActiveDashboard = useDashboardStore((s) => s.setActiveDashboard)
-    const patchActiveDashboard = useDashboardStore((s) => s.patchActiveDashboard)
-    const setError = useDashboardStore((s) => s.setError)
+    const setStreaming = useChatStore((s) => s.setStreaming)
+    const setError = useChatStore((s) => s.setError)
+    const appendUserTurn = useChatStore((s) => s.appendUserTurn)
+    const patchLastTurn = useChatStore((s) => s.patchLastTurn)
+    const setLastTurnStatus = useChatStore((s) => s.setLastTurnStatus)
+    const removeLastTurn = useChatStore((s) => s.removeLastTurn)
+    const setActiveConversation = useChatStore((s) => s.setActiveConversation)
     const { refresh } = useConversations()
 
     // conversationId present => follow-up turn on an existing conversation.
     const submit = async (question: string, conversationId?: string | null) => {
         setStreaming(true)
         setError(null)
+        appendUserTurn(question)   // optimistic: a pending assistant turn appears immediately
+
         const reasoningSteps: ReasoningStep[] = []
+        let errored = false
+        const controller = new AbortController()
+        activeController = controller
 
         try {
             const response = await fetch(`${API_BASE}/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ question, conversation_id: conversationId ?? null }),
+                signal: controller.signal,
             })
             if (!response.ok || !response.body) {
                 throw new Error(`Query failed: ${response.status}`)
@@ -51,34 +64,47 @@ export function useQueryStream() {
                     const payload = JSON.parse(dataLine)
 
                     if (eventType === 'meta') {
-                        // We now know the conversation id — establish the dashboard shell.
-                        // For follow-ups this replaces the view with the new turn.
-                        setActiveDashboard({
-                            id: payload.conversation_id,
-                            title: question,
-                            dataset: 'sales',
-                            widgets: [],
-                            reasoningSteps: [],
-                        })
+                        setActiveConversation(payload.conversation_id, question)
                     } else if (eventType === 'reasoning') {
                         reasoningSteps.push({ title: payload.message, tool: payload.step })
-                        patchActiveDashboard({ reasoningSteps: [...reasoningSteps] })
+                        patchLastTurn({ reasoningSteps: [...reasoningSteps] })
                     } else if (eventType === 'dashboard') {
-                        patchActiveDashboard({ widgets: payload.widgets, summary: payload.summary })
+                        patchLastTurn({ widgets: payload.widgets, summary: payload.summary })
                     } else if (eventType === 'error') {
+                        errored = true
                         setError(payload.message)
+                        setLastTurnStatus('error', payload.message)
                     }
                 }
             }
 
-            // New turn is persisted server-side — refresh the sidebar to reflect it.
-            await refresh()
+            if (!errored) setLastTurnStatus('complete')
+            await refresh()   // new turn is persisted — reflect it in the sidebar
         } catch (e) {
-            setError(e instanceof Error ? e.message : String(e))
+            if (e instanceof DOMException && e.name === 'AbortError') {
+                // User hit Stop — keep whatever streamed so far, mark the turn done.
+                setLastTurnStatus('complete')
+            } else {
+                const msg = e instanceof Error ? e.message : String(e)
+                setError(msg)
+                setLastTurnStatus('error', msg)
+            }
         } finally {
+            activeController = null
             setStreaming(false)
         }
     }
 
-    return { submit }
+    const stop = () => activeController?.abort()
+
+    // Retry: drop the last turn and re-ask the same question.
+    const retry = async (conversationId: string | null) => {
+        const { turns } = useChatStore.getState()
+        const last = turns.at(-1)
+        if (!last) return
+        removeLastTurn()
+        await submit(last.question, conversationId)
+    }
+
+    return { submit, stop, retry }
 }

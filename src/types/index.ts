@@ -1,6 +1,4 @@
-import type { ReactNode } from 'react';
-
-export type Widget = 
+export type Widget =
     | { type: 'stat_card'; span: number; title: string; payload: StatCardPayload }
     | { type: 'line_chart'; span: number; title: string; payload: LineChartPayload }
     | { type: 'pie_chart'; span: number; title: string; payload: PieChartPayload }
@@ -42,15 +40,20 @@ export interface TablePayload {
     columns: { key: string; label: string }[]
 }
 
-// A rendered dashboard = one conversation turn loaded into view.
-// `id` is the conversation id; the dashboard always reflects the latest turn.
-export interface Dashboard {
-    id: string;
-    title: string;
-    dataset: string;
-    summary?: ReactNode;
+// --- Chat thread rendering model (Phase A) ---
+
+// One turn = a user question + the assistant's streamed/loaded response.
+// Rendered as a user bubble followed by an assistant block.
+export type TurnStatus = 'streaming' | 'complete' | 'error'
+
+export interface ChatTurn {
+    id: string;                 // turn id (temp id while streaming, real id after persist)
+    question: string;
+    summary?: string | null;
     widgets: Widget[];
     reasoningSteps: ReasoningStep[];
+    status: TurnStatus;
+    error?: string;
 }
 
 export interface ReasoningStep {

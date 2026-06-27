@@ -1,30 +1,29 @@
 import { useCallback } from 'react'
-import { useDashboardStore } from '@/store/useDashboardStore'
-import { listConversations, getConversation, deleteConversation } from '@/lib/api'
-import type { Dashboard, Turn } from '@/types'
+import { useChatStore } from '@/store/useChatStore'
+import {
+    listConversations,
+    getConversation,
+    deleteConversation,
+    renameConversation,
+} from '@/lib/api'
+import type { ChatTurn, Turn } from '@/types'
 
-// A loaded dashboard always reflects the conversation's latest turn.
-function turnToDashboard(
-    convId: string,
-    title: string,
-    dataset: string,
-    turn: Turn,
-): Dashboard {
+function toChatTurn(t: Turn): ChatTurn {
     return {
-        id: convId,
-        title,
-        dataset,
-        summary: turn.summary ?? undefined,
-        widgets: turn.widgets,
-        reasoningSteps: turn.reasoningSteps,
+        id: t.id,
+        question: t.question,
+        summary: t.summary,
+        widgets: t.widgets,
+        reasoningSteps: t.reasoningSteps,
+        status: 'complete',
     }
 }
 
 export function useConversations() {
-    const setConversations = useDashboardStore((s) => s.setConversations)
-    const setActiveDashboard = useDashboardStore((s) => s.setActiveDashboard)
-    const openConversationView = useDashboardStore((s) => s.openConversation)
-    const newConversation = useDashboardStore((s) => s.newConversation)
+    const setConversations = useChatStore((s) => s.setConversations)
+    const loadConversation = useChatStore((s) => s.loadConversation)
+    const startNewChat = useChatStore((s) => s.startNewChat)
+    const renameLocal = useChatStore((s) => s.renameConversationLocal)
 
     const refresh = useCallback(async () => {
         try {
@@ -34,28 +33,37 @@ export function useConversations() {
         }
     }, [setConversations])
 
+    // Load a full conversation thread (all turns) into the active view.
     const open = useCallback(async (id: string) => {
-        openConversationView(id)   // snappy view switch; content streams in below
         try {
             const convo = await getConversation(id)
-            const latest = convo.turns.at(-1)
-            if (latest) {
-                setActiveDashboard(turnToDashboard(convo.id, convo.title, convo.dataset, latest))
-            }
+            loadConversation(convo.id, convo.title, convo.turns.map(toChatTurn))
         } catch (e) {
             console.error('Failed to open conversation', e)
         }
-    }, [openConversationView, setActiveDashboard])
+    }, [loadConversation])
 
     const remove = useCallback(async (id: string) => {
         try {
             await deleteConversation(id)
-            newConversation()
+            startNewChat()
             await refresh()
         } catch (e) {
             console.error('Failed to delete conversation', e)
         }
-    }, [newConversation, refresh])
+    }, [startNewChat, refresh])
 
-    return { refresh, open, remove }
+    const rename = useCallback(async (id: string, title: string) => {
+        const trimmed = title.trim()
+        if (!trimmed) return
+        renameLocal(id, trimmed)   // optimistic
+        try {
+            await renameConversation(id, trimmed)
+            await refresh()
+        } catch (e) {
+            console.error('Failed to rename conversation', e)
+        }
+    }, [renameLocal, refresh])
+
+    return { refresh, open, remove, rename }
 }

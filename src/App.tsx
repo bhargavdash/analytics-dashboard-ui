@@ -1,16 +1,15 @@
 import { useEffect } from 'react'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/dashboard/AppSidebar'
-import { Dashboard } from '@/components/dashboard/Dashboard'
 import { TopBar } from '@/components/layout/TopBar'
-import { ReasoningDrawer } from '@/components/layout/ReasoningDrawer'
-import { useDashboardStore } from '@/store/useDashboardStore'
+import { ChatThread } from '@/components/chat/ChatThread'
+import { EmptyHero } from '@/components/chat/EmptyHero'
+import { useChatStore } from '@/store/useChatStore'
 import { useConversations } from '@/hooks/useConversations'
-import { EmptyState } from './components/empty/EmptyState'
 
 function App() {
-  const view = useDashboardStore((state) => state.view)
-  const theme = useDashboardStore((state) => state.theme)
+  const theme = useChatStore((state) => state.theme)
+  const hasThread = useChatStore((state) => state.turns.length > 0)
   const { refresh } = useConversations()
 
   useEffect(() => {
@@ -22,16 +21,13 @@ function App() {
   }, [theme])
 
   return (
-    <>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <TopBar />
-          {view === 'dash' ? <Dashboard /> : <EmptyState />}
-        </SidebarInset>
-      </SidebarProvider>
-      <ReasoningDrawer />
-    </>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset className="flex h-svh flex-col">
+        <TopBar />
+        {hasThread ? <ChatThread /> : <EmptyHero />}
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
 

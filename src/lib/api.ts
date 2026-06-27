@@ -19,3 +19,12 @@ export async function deleteConversation(id: string): Promise<void> {
     const res = await fetch(`${API_BASE}/conversations/${id}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`deleteConversation failed: ${res.status}`)
 }
+
+export async function renameConversation(id: string, title: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/conversations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+    })
+    if (!res.ok) throw new Error(`renameConversation failed: ${res.status}`)
+}
