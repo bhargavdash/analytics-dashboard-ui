@@ -38,21 +38,27 @@ export const ReasoningDisclosure = ({ steps, status }: Props) => {
                 <ChevronRight className={`ml-auto size-3.5 transition-transform ${open ? 'rotate-90' : ''}`} />
             </button>
 
-            {open && (
-                <div className="flex flex-col gap-2 border-t px-3 py-2.5">
-                    {steps.map((step, i) => (
-                        <div
-                            key={i}
-                            className="flex items-start gap-2 animate-in fade-in slide-in-from-left-1 duration-300 motion-reduce:animate-none"
-                        >
-                            <span className="mt-0.5 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-                                {step.tool}
-                            </span>
-                            <span className="text-xs leading-relaxed">{step.title}</span>
-                        </div>
-                    ))}
+            {/* Grid-rows 0fr↔1fr is the CSS-only height animation — no measuring, and the
+                content stays mounted so streaming steps keep appending smoothly. */}
+            <div
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+            >
+                <div className="overflow-hidden">
+                    <div className="flex flex-col gap-2 border-t px-3 py-2.5">
+                        {steps.map((step, i) => (
+                            <div
+                                key={i}
+                                className="flex items-start gap-2 animate-in fade-in slide-in-from-left-1 duration-300 motion-reduce:animate-none"
+                            >
+                                <span className="mt-0.5 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                                    {step.tool}
+                                </span>
+                                <span className="text-xs leading-relaxed">{step.title}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            )}
+            </div>
         </div>
     )
 }

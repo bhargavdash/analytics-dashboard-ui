@@ -3,7 +3,7 @@ import type { ChatTurn } from '@/types'
 import { useChatStore } from '@/store/useChatStore'
 import { useQueryStream } from '@/hooks/useQueryStream'
 import { ReasoningDisclosure } from './ReasoningDisclosure'
-import { WidgetGrid } from './WidgetGrid'
+import { WidgetGrid, WidgetGridSkeleton } from './WidgetGrid'
 import { Button } from '../ui/button'
 
 type Props = {
@@ -27,6 +27,13 @@ export const AssistantTurn = ({ turn, isLast }: Props) => {
     const showTrace = turn.status === 'streaming' || !isConversational
     const showRetry = isLast && turn.status !== 'streaming' && !isStreaming && !isConversational
 
+    // Charts are on the way once the a2ui step has fired but no widgets have landed yet.
+    // (Conversational + no-data branches never emit an a2ui step, so they show no skeleton.)
+    const chartsPending =
+        turn.status === 'streaming' &&
+        turn.widgets.length === 0 &&
+        turn.reasoningSteps.some((s) => s.tool === 'a2ui_schema')
+
     return (
         <div className="flex flex-col gap-3">
             {showTrace && (
@@ -38,6 +45,7 @@ export const AssistantTurn = ({ turn, isLast }: Props) => {
             )}
 
             <WidgetGrid widgets={turn.widgets} />
+            {chartsPending && <WidgetGridSkeleton />}
 
             {turn.status === 'error' && (
                 <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">

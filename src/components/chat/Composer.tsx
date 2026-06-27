@@ -13,6 +13,7 @@ type ComposerProps = {
 // new-chat vs follow-up from the active conversation id in the store.
 export const Composer = ({ placeholder, autoFocus }: ComposerProps) => {
     const [value, setValue] = useState('')
+    const [nudge, setNudge] = useState(false)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const activeId = useChatStore((s) => s.activeId)
     const isStreaming = useChatStore((s) => s.isStreaming)
@@ -27,14 +28,19 @@ export const Composer = ({ placeholder, autoFocus }: ComposerProps) => {
 
     const send = async () => {
         const q = value.trim()
-        if (!q || isStreaming) return
+        if (!q) return
+        // Can't send while a turn is streaming — nudge instead of silently swallowing Enter.
+        if (isStreaming) { setNudge(true); return }
         setValue('')
         if (textareaRef.current) textareaRef.current.style.height = 'auto'
         await submit(q, activeId)
     }
 
     return (
-        <div className="flex items-end gap-2 rounded-xl border bg-background p-2 pl-3 shadow-sm focus-within:border-ring">
+        <div
+            onAnimationEnd={() => setNudge(false)}
+            className={`flex items-end gap-2 rounded-xl border bg-background p-2 pl-3 shadow-sm focus-within:border-ring ${nudge ? 'animate-shake' : ''}`}
+        >
             <textarea
                 ref={textareaRef}
                 value={value}
