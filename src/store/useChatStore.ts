@@ -23,6 +23,7 @@ type ChatStore = {
     // streaming a turn (the last turn is always the in-flight one)
     appendUserTurn: (question: string) => void;
     patchLastTurn: (partial: Partial<ChatTurn>) => void;
+    appendSummaryToken: (token: string) => void;
     setLastTurnStatus: (status: ChatTurn['status'], error?: string) => void;
     removeLastTurn: () => void;
 
@@ -70,6 +71,14 @@ export const useChatStore = create<ChatStore>()((set) => ({
         if (state.turns.length === 0) return {};
         const turns = state.turns.slice();
         turns[turns.length - 1] = { ...turns[turns.length - 1], ...partial };
+        return { turns };
+    }),
+    // Append a streamed token to the in-flight turn's summary (typewriter reveal).
+    appendSummaryToken: (token) => set((state) => {
+        if (state.turns.length === 0) return {};
+        const turns = state.turns.slice();
+        const last = turns[turns.length - 1];
+        turns[turns.length - 1] = { ...last, summary: (last.summary ?? '') + token };
         return { turns };
     }),
     setLastTurnStatus: (status, error) => set((state) => {

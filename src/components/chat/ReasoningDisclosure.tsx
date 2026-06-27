@@ -41,7 +41,10 @@ export const ReasoningDisclosure = ({ steps, status }: Props) => {
             {open && (
                 <div className="flex flex-col gap-2 border-t px-3 py-2.5">
                     {steps.map((step, i) => (
-                        <div key={i} className="flex items-start gap-2">
+                        <div
+                            key={i}
+                            className="flex items-start gap-2 animate-in fade-in slide-in-from-left-1 duration-300 motion-reduce:animate-none"
+                        >
                             <span className="mt-0.5 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
                                 {step.tool}
                             </span>

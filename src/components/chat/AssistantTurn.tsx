@@ -16,11 +16,22 @@ export const AssistantTurn = ({ turn, isLast }: Props) => {
     const isStreaming = useChatStore((s) => s.isStreaming)
     const { retry } = useQueryStream()
 
+    // A pure conversational reply (greeting/clarify/decline) routed without ever
+    // touching SQL — only the 'route' step, no widgets. Don't clutter it with a
+    // reasoning trace or a Retry affordance.
+    const isConversational =
+        turn.reasoningSteps.length > 0 &&
+        turn.widgets.length === 0 &&
+        turn.reasoningSteps.every((s) => s.tool === 'route')
+
+    const showTrace = turn.status === 'streaming' || !isConversational
+    const showRetry = isLast && turn.status !== 'streaming' && !isStreaming && !isConversational
+
     return (
         <div className="flex flex-col gap-3">
-            {/* The disclosure's live spinner is the progress indicator — no separate
-                "building…" placeholder, so greetings (no chart) don't flash one. */}
-            <ReasoningDisclosure steps={turn.reasoningSteps} status={turn.status} />
+            {showTrace && (
+                <ReasoningDisclosure steps={turn.reasoningSteps} status={turn.status} />
+            )}
 
             {turn.summary && (
                 <p className="text-sm leading-relaxed text-foreground">{turn.summary}</p>
@@ -35,7 +46,7 @@ export const AssistantTurn = ({ turn, isLast }: Props) => {
                 </div>
             )}
 
-            {isLast && turn.status !== 'streaming' && !isStreaming && (
+            {showRetry && (
                 <div>
                     <Button
                         variant="ghost"

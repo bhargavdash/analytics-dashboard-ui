@@ -12,6 +12,7 @@ export function useQueryStream() {
     const setError = useChatStore((s) => s.setError)
     const appendUserTurn = useChatStore((s) => s.appendUserTurn)
     const patchLastTurn = useChatStore((s) => s.patchLastTurn)
+    const appendSummaryToken = useChatStore((s) => s.appendSummaryToken)
     const setLastTurnStatus = useChatStore((s) => s.setLastTurnStatus)
     const removeLastTurn = useChatStore((s) => s.removeLastTurn)
     const setActiveConversation = useChatStore((s) => s.setActiveConversation)
@@ -68,8 +69,13 @@ export function useQueryStream() {
                     } else if (eventType === 'reasoning') {
                         reasoningSteps.push({ title: payload.message, tool: payload.step })
                         patchLastTurn({ reasoningSteps: [...reasoningSteps] })
+                    } else if (eventType === 'summary_token') {
+                        // Prose insight streams in token-by-token before the charts arrive.
+                        appendSummaryToken(payload.token)
                     } else if (eventType === 'dashboard') {
-                        patchLastTurn({ widgets: payload.widgets, summary: payload.summary })
+                        // Summary was already streamed via summary_token — only patch charts
+                        // here so we don't clobber the revealed text.
+                        patchLastTurn({ widgets: payload.widgets })
                     } else if (eventType === 'message') {
                         // Conversational reply (greeting / clarification / decline / no-data)
                         patchLastTurn({ summary: payload.message })
