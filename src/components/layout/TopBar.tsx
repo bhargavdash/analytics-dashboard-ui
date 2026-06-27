@@ -9,14 +9,14 @@ import {
 } from '@/components/ui/breadcrumb'
 
 export const TopBar = () => {
-    const dashboards = useDashboardStore(s => s.dashboards)
     const activeId = useDashboardStore(s => s.activeId)
-    const selectDashboard = useDashboardStore(s => s.selectDashboard)
+    const activeDashboard = useDashboardStore(s => s.activeDashboard)
+    const newConversation = useDashboardStore(s => s.newConversation)
     const isStreaming = useDashboardStore(s => s.isStreaming)
     const toggleReasoningOpen = useDashboardStore(s => s.toggleReasoningOpen)
     const theme = useDashboardStore((state) => state.theme);
     const toggleTheme = useDashboardStore((state) => state.toggleTheme);
-    const title = dashboards.find(d => d.id === activeId)?.title
+    const title = activeDashboard?.title
 
     return (
         <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b bg-background px-4">
@@ -27,7 +27,7 @@ export const TopBar = () => {
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>
-                            <BreadcrumbLink onClick={() => selectDashboard(null)} className="cursor-pointer">
+                            <BreadcrumbLink onClick={newConversation} className="cursor-pointer">
                                 Dashboards
                             </BreadcrumbLink>
                         </BreadcrumbItem>

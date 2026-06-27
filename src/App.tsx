@@ -5,17 +5,17 @@ import { Dashboard } from '@/components/dashboard/Dashboard'
 import { TopBar } from '@/components/layout/TopBar'
 import { ReasoningDrawer } from '@/components/layout/ReasoningDrawer'
 import { useDashboardStore } from '@/store/useDashboardStore'
-import { SEED_DASHBOARDS } from '@/data/seed'
+import { useConversations } from '@/hooks/useConversations'
 import { EmptyState } from './components/empty/EmptyState'
 
 function App() {
-  const setDashboards = useDashboardStore((state) => state.setDashboards)
   const view = useDashboardStore((state) => state.view)
   const theme = useDashboardStore((state) => state.theme)
+  const { refresh } = useConversations()
 
   useEffect(() => {
-    setDashboards(SEED_DASHBOARDS)
-  }, [setDashboards])
+    refresh()   // load past conversations into the sidebar on boot
+  }, [refresh])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')

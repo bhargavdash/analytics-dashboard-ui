@@ -1,23 +1,35 @@
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, Trash2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '../ui/sidebar'
 import { useDashboardStore } from '@/store/useDashboardStore'
+import { useConversations } from '@/hooks/useConversations'
+
+function relativeTime(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'just now'
+    if (mins < 60) return `${mins}m ago`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `${hrs}h ago`
+    return `${Math.floor(hrs / 24)}d ago`
+}
 
 export const AppSidebar = () => {
-    const dashboards = useDashboardStore((state) => state.dashboards)
+    const conversations = useDashboardStore((state) => state.conversations)
     const searchQuery = useDashboardStore((state) => state.searchQuery)
     const activeId = useDashboardStore((state) => state.activeId)
-    const selectDashboard = useDashboardStore((state) => state.selectDashboard)
     const setSearchQuery = useDashboardStore((state) => state.setSearchQuery)
+    const newConversation = useDashboardStore((state) => state.newConversation)
+    const { open, remove } = useConversations()
 
-    const filtered = dashboards.filter((d) =>
-        d.title.toLowerCase().includes(searchQuery.toLowerCase())
+    const filtered = conversations.filter((c) =>
+        c.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
     return (
         <Sidebar>
             <SidebarHeader className="border-b px-4 py-3">
-                <p className="text-sm font-semibold">Helix {"\u00A0"}{"\u2022"}{"\u00A0"} POC</p>
+                <p className="text-sm font-semibold">Helix {" "}{"•"}{" "} POC</p>
             </SidebarHeader>
 
             <SidebarContent className="px-2 py-3 flex flex-col gap-3">
@@ -26,7 +38,7 @@ export const AppSidebar = () => {
                     <Button
                         variant="outline"
                         className="w-full justify-start gap-2"
-                        onClick={() => selectDashboard(null)}
+                        onClick={newConversation}
                     >
                         <Plus className="size-4" />
                         New dashboard
@@ -42,26 +54,35 @@ export const AppSidebar = () => {
                     </div>
                 </div>
 
-                {/* Dashboard list */}
+                {/* Conversation list */}
                 <SidebarMenu>
-                    {filtered.map((dashboard) => (
-                        <SidebarMenuItem key={dashboard.id}>
+                    {filtered.map((convo) => (
+                        <SidebarMenuItem key={convo.id} className="group/item relative">
                             <SidebarMenuButton
-                                isActive={dashboard.id === activeId}
-                                onClick={() => selectDashboard(dashboard.id)}
-                                className="flex flex-col items-start gap-0.5 h-auto py-2"
+                                isActive={convo.id === activeId}
+                                onClick={() => open(convo.id)}
+                                className="flex flex-col items-start gap-0.5 h-auto py-2 pr-8"
                             >
                                 <span className="text-sm font-medium leading-tight line-clamp-1">
-                                    {dashboard.title}
+                                    {convo.title}
                                 </span>
                                 <span className="text-xs text-muted-foreground font-normal">
-                                    {dashboard.createdAt} · {dashboard.widgetCount} widgets · {dashboard.dataset}
+                                    {relativeTime(convo.updated_at)} · {convo.widget_count ?? 0} widgets · {convo.turn_count} {convo.turn_count === 1 ? 'turn' : 'turns'}
                                 </span>
                             </SidebarMenuButton>
+                            <button
+                                aria-label="Delete conversation"
+                                onClick={(e) => { e.stopPropagation(); remove(convo.id) }}
+                                className="absolute right-1.5 top-1.5 opacity-0 group-hover/item:opacity-100 p-1 rounded text-muted-foreground hover:text-destructive transition-opacity"
+                            >
+                                <Trash2 className="size-3.5" />
+                            </button>
                         </SidebarMenuItem>
                     ))}
                     {filtered.length === 0 && (
-                        <p className="px-2 py-4 text-xs text-muted-foreground">No dashboards match.</p>
+                        <p className="px-2 py-4 text-xs text-muted-foreground">
+                            {conversations.length === 0 ? 'No dashboards yet — ask a question to begin.' : 'No dashboards match.'}
+                        </p>
                     )}
                 </SidebarMenu>
             </SidebarContent>

@@ -42,15 +42,14 @@ export interface TablePayload {
     columns: { key: string; label: string }[]
 }
 
+// A rendered dashboard = one conversation turn loaded into view.
+// `id` is the conversation id; the dashboard always reflects the latest turn.
 export interface Dashboard {
     id: string;
     title: string;
-    query: string;
     dataset: string;
-    createdAt: string;
-    widgetCount: number;
-    widgets: Widget[];
     summary?: ReactNode;
+    widgets: Widget[];
     reasoningSteps: ReasoningStep[];
 }
 
@@ -60,4 +59,38 @@ export interface ReasoningStep {
     detail?: string;
     code?: string;
     pills?: string[];
+}
+
+// --- Server-backed conversation persistence ---
+
+// Sidebar list item (GET /conversations).
+export interface ConversationMeta {
+    id: string;
+    title: string;
+    dataset: string;
+    created_at: string;
+    updated_at: string;
+    turn_count: number;
+    widget_count: number | null;
+}
+
+// One question→dashboard cycle within a conversation (GET /conversations/:id).
+export interface Turn {
+    id: string;
+    seq: number;
+    question: string;
+    sql: string | null;
+    summary: string | null;
+    widgets: Widget[];
+    reasoningSteps: ReasoningStep[];
+    created_at: string;
+}
+
+export interface ConversationDetail {
+    id: string;
+    title: string;
+    dataset: string;
+    created_at: string;
+    updated_at: string;
+    turns: Turn[];
 }

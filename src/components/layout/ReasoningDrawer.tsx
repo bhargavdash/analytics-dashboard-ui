@@ -4,9 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 export const ReasoningDrawer = () => {
     const reasoningOpen = useDashboardStore(s => s.reasoningOpen)
     const toggleReasoning = useDashboardStore(s => s.toggleReasoningOpen)
-    const dashboards = useDashboardStore(s => s.dashboards)
-    const activeId = useDashboardStore(s => s.activeId)
-    const steps = dashboards.find(d => d.id === activeId)?.reasoningSteps ?? []
+    const steps = useDashboardStore(s => s.activeDashboard?.reasoningSteps) ?? []
 
     return (
         <Sheet open={reasoningOpen} onOpenChange={toggleReasoning}>

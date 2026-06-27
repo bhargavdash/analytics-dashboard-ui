@@ -1,51 +1,64 @@
 import { create } from 'zustand';
-import type { Dashboard } from '../types';
+import type { ConversationMeta, Dashboard } from '../types';
 
 type DashboardStore = {
     view: 'empty' | 'dash';
-    dashboards: Dashboard[];
-    activeId: string | null;
+    conversations: ConversationMeta[];   // sidebar list (lightweight meta)
+    activeId: string | null;             // active conversation id
+    activeDashboard: Dashboard | null;   // the rendered turn for activeId
     searchQuery: string;
     reasoningOpen: boolean;
     isStreaming: boolean;
-    shownWidgetCount: number;
+    error: string | null;
     theme: 'light' | 'dark';
 
-    // actions 
-    addDashboard: (dashboard: Dashboard) => void;
-    selectDashboard: (id: string | null) => void;
-    setDashboards: (dashboards: Dashboard[]) => void;
+    // actions
+    setConversations: (conversations: ConversationMeta[]) => void;
+    setActiveDashboard: (dashboard: Dashboard | null) => void;
+    patchActiveDashboard: (partial: Partial<Dashboard>) => void;
+    openConversation: (id: string) => void;   // switches to dash view; content loaded by hook
+    newConversation: () => void;              // back to empty composer
     setSearchQuery: (query: string) => void;
     toggleReasoningOpen: () => void;
     setStreaming: (isStreaming: boolean) => void;
-    setShownWidgetCount: (count: number) => void;
+    setError: (error: string | null) => void;
     toggleTheme: () => void;
 }
 
 export const useDashboardStore = create<DashboardStore>()((set) => ({
     view: 'empty',
-    dashboards: [],
+    conversations: [],
     activeId: null,
+    activeDashboard: null,
     searchQuery: '',
     reasoningOpen: false,
     isStreaming: false,
-    shownWidgetCount: 0,
+    error: null,
     theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
 
-    selectDashboard: (id: string | null) => set({
-        activeId: id,
-        view: id ? 'dash' : 'empty'
+    setConversations: (conversations) => set({ conversations }),
+    setActiveDashboard: (dashboard) => set({
+        activeDashboard: dashboard,
+        activeId: dashboard?.id ?? null,
+        view: dashboard ? 'dash' : 'empty',
     }),
-    setDashboards: (dashboards) => set({ dashboards }),
-    addDashboard: (dashboard) => set((state) => ({
-        dashboards: [dashboard, ...state.dashboards],
-        activeId: dashboard.id,
-        view: 'dash',
-    })),
+    // Live-update the rendered dashboard as stream events arrive (reasoning steps,
+    // then widgets). Only patches when there's an active dashboard to patch.
+    patchActiveDashboard: (partial) => set((state) =>
+        state.activeDashboard
+            ? { activeDashboard: { ...state.activeDashboard, ...partial } }
+            : {}
+    ),
+    openConversation: (id) => set({ activeId: id, view: 'dash', reasoningOpen: false }),
+    newConversation: () => set({
+        activeId: null,
+        activeDashboard: null,
+        view: 'empty',
+        error: null,
+    }),
     setSearchQuery: (query) => set({ searchQuery: query }),
     toggleReasoningOpen: () => set((state) => ({ reasoningOpen: !state.reasoningOpen })),
     setStreaming: (isStreaming) => set({ isStreaming }),
-    setShownWidgetCount: (count) => set({ shownWidgetCount: count }),
+    setError: (error) => set({ error }),
     toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
-
 }))
