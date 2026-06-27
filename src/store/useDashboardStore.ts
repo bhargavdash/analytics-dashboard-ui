@@ -12,6 +12,7 @@ type DashboardStore = {
     theme: 'light' | 'dark';
 
     // actions 
+    addDashboard: (dashboard: Dashboard) => void;
     selectDashboard: (id: string | null) => void;
     setDashboards: (dashboards: Dashboard[]) => void;
     setSearchQuery: (query: string) => void;
@@ -36,6 +37,11 @@ export const useDashboardStore = create<DashboardStore>()((set) => ({
         view: id ? 'dash' : 'empty'
     }),
     setDashboards: (dashboards) => set({ dashboards }),
+    addDashboard: (dashboard) => set((state) => ({
+        dashboards: [dashboard, ...state.dashboards],
+        activeId: dashboard.id,
+        view: 'dash',
+    })),
     setSearchQuery: (query) => set({ searchQuery: query }),
     toggleReasoningOpen: () => set((state) => ({ reasoningOpen: !state.reasoningOpen })),
     setStreaming: (isStreaming) => set({ isStreaming }),
