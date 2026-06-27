@@ -70,6 +70,9 @@ export function useQueryStream() {
                         patchLastTurn({ reasoningSteps: [...reasoningSteps] })
                     } else if (eventType === 'dashboard') {
                         patchLastTurn({ widgets: payload.widgets, summary: payload.summary })
+                    } else if (eventType === 'message') {
+                        // Conversational reply (greeting / clarification / decline / no-data)
+                        patchLastTurn({ summary: payload.message })
                     } else if (eventType === 'error') {
                         errored = true
                         setError(payload.message)

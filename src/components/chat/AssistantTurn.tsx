@@ -16,18 +16,14 @@ export const AssistantTurn = ({ turn, isLast }: Props) => {
     const isStreaming = useChatStore((s) => s.isStreaming)
     const { retry } = useQueryStream()
 
-    const building = turn.status === 'streaming' && turn.widgets.length === 0
-
     return (
         <div className="flex flex-col gap-3">
+            {/* The disclosure's live spinner is the progress indicator — no separate
+                "building…" placeholder, so greetings (no chart) don't flash one. */}
             <ReasoningDisclosure steps={turn.reasoningSteps} status={turn.status} />
 
             {turn.summary && (
                 <p className="text-sm leading-relaxed text-foreground">{turn.summary}</p>
-            )}
-
-            {building && (
-                <p className="text-sm text-muted-foreground">Building your dashboard…</p>
             )}
 
             <WidgetGrid widgets={turn.widgets} />
