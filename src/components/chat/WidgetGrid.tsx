@@ -1,7 +1,13 @@
+import { memo, lazy, Suspense } from 'react'
 import type { Widget as WidgetType } from '@/types'
 import { cn } from '@/lib/utils'
-import { Widget } from '../dashboard/Widget'
 import { Skeleton } from '../ui/skeleton'
+
+// Lazy-load the chart dispatcher. The entire Recharts dependency is reachable only through
+// `Widget` and its leaf chart components, so this single boundary code-splits all of Recharts
+// (~hundreds of KB) into an async chunk that's fetched on first render of a chart — which only
+// ever happens after the first streaming answer, never on initial app load.
+const Widget = lazy(() => import('../dashboard/Widget').then((m) => ({ default: m.Widget })))
 
 const spanClass: Record<number, string> = {
     1: 'col-span-1', 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4',
@@ -9,18 +15,25 @@ const spanClass: Record<number, string> = {
     9: 'col-span-9', 10: 'col-span-10', 11: 'col-span-11', 12: 'col-span-12',
 }
 
-export const WidgetGrid = ({ widgets }: { widgets: WidgetType[] }) => {
+// Memoized: while a turn streams, summary tokens patch the turn object on every frame, but
+// `widgets` only changes once (when the `dashboard` event lands). Memoizing on the widgets
+// array reference means the charts don't re-render — and Recharts doesn't re-layout — on each
+// of the ~80 token patches.
+export const WidgetGrid = memo(({ widgets }: { widgets: WidgetType[] }) => {
     if (widgets.length === 0) return null
     return (
         <div className="grid grid-cols-12 gap-4">
             {widgets.map((widget, i) => (
                 <div key={i} className={spanClass[widget.span] ?? 'col-span-12'}>
-                    <Widget w={widget} />
+                    <Suspense fallback={<SkeletonCard className="h-full min-h-28" />}>
+                        <Widget w={widget} />
+                    </Suspense>
                 </div>
             ))}
         </div>
     )
-}
+})
+WidgetGrid.displayName = 'WidgetGrid'
 
 // A card-shaped placeholder that mirrors a real widget's frame (title line + body),
 // so the layout doesn't jump when the real charts replace it.

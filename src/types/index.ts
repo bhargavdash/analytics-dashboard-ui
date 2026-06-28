@@ -93,7 +93,28 @@ export interface ConversationDetail {
     id: string;
     title: string;
     dataset: string;
+    dataset_id?: string | null;
     created_at: string;
     updated_at: string;
     turns: Turn[];
+}
+
+// --- Bring-your-own-data (Phase B) ---
+
+export interface DatasetColumn {
+    name: string;
+    type: string;
+}
+
+// A user-uploaded dataset (CSV/XLSX) ingested into its own DuckDB table.
+export interface Dataset {
+    id: string;
+    name: string;            // original filename
+    source: string;          // 'csv' | 'xlsx'
+    table_name: string;
+    columns: DatasetColumn[];
+    sample: DataRow[];
+    suggestions: string[];   // LLM-generated starter questions
+    row_count: number;
+    created_at: string;
 }

@@ -39,13 +39,14 @@ export const Composer = ({ placeholder, autoFocus }: ComposerProps) => {
     return (
         <div
             onAnimationEnd={() => setNudge(false)}
-            className={`flex items-end gap-2 rounded-xl border bg-background p-2 pl-3 shadow-sm focus-within:border-ring ${nudge ? 'animate-shake' : ''}`}
+            className={`flex items-end gap-2 rounded-xl border bg-background p-2 pl-3 shadow-sm focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/50 ${nudge ? 'animate-shake' : ''}`}
         >
             <textarea
                 ref={textareaRef}
                 value={value}
                 autoFocus={autoFocus}
                 rows={1}
+                aria-label="Ask a question about your data"
                 placeholder={placeholder ?? 'Ask anything about your data…'}
                 onChange={(e) => { setValue(e.target.value); autosize() }}
                 onKeyDown={(e) => {

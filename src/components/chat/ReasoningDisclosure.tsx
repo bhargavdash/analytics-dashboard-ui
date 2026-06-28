@@ -25,7 +25,8 @@ export const ReasoningDisclosure = ({ steps, status }: Props) => {
             <button
                 onClick={() => setOpen((o) => !o)}
                 aria-expanded={open}
-                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground"
+                aria-label={open ? 'Hide reasoning steps' : 'Show reasoning steps'}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 {status === 'streaming'
                     ? <Loader2 className="size-3.5 animate-spin" />

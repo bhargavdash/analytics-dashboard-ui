@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import type { ChatTurn, ConversationMeta } from '../types';
+import type { ChatTurn, ConversationMeta, Dataset } from '../types';
 
 type ChatStore = {
     conversations: ConversationMeta[];   // sidebar list (lightweight meta)
     activeId: string | null;             // active conversation id (null = unsaved new chat)
     title: string | null;                // active conversation title
     turns: ChatTurn[];                   // the active thread, oldest first
+    activeDataset: Dataset | null;       // dataset a NEW chat is scoped to (null = demo)
     searchQuery: string;
     isStreaming: boolean;
     error: string | null;
@@ -19,6 +20,7 @@ type ChatStore = {
     startNewChat: () => void;
     loadConversation: (id: string, title: string, turns: ChatTurn[]) => void;
     setActiveConversation: (id: string, title: string) => void;   // from the stream `meta` event
+    setActiveDataset: (dataset: Dataset | null) => void;          // picking a dataset starts a fresh thread
 
     // streaming a turn (the last turn is always the in-flight one)
     appendUserTurn: (question: string) => void;
@@ -38,6 +40,7 @@ export const useChatStore = create<ChatStore>()((set) => ({
     activeId: null,
     title: null,
     turns: [],
+    activeDataset: null,
     searchQuery: '',
     isStreaming: false,
     error: null,
@@ -49,12 +52,16 @@ export const useChatStore = create<ChatStore>()((set) => ({
         title: state.activeId === id ? title : state.title,
     })),
 
-    startNewChat: () => set({ activeId: null, title: null, turns: [], error: null }),
-    loadConversation: (id, title, turns) => set({ activeId: id, title, turns, error: null }),
+    // New chat / opening a saved thread both reset to the demo dataset (activeDataset
+    // only scopes brand-new chats; saved threads carry their dataset on the server).
+    startNewChat: () => set({ activeId: null, title: null, turns: [], error: null, activeDataset: null }),
+    loadConversation: (id, title, turns) => set({ activeId: id, title, turns, error: null, activeDataset: null }),
     setActiveConversation: (id, title) => set((state) => ({
         activeId: id,
         title: state.title ?? title,
     })),
+    // Picking a dataset starts a fresh thread scoped to it.
+    setActiveDataset: (activeDataset) => set({ activeDataset, activeId: null, title: null, turns: [], error: null }),
 
     appendUserTurn: (question) => set((state) => ({
         turns: [...state.turns, {

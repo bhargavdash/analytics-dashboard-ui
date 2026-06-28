@@ -11,7 +11,17 @@ export const MessageList = ({ lastTurnRef }: Props) => {
     const turns = useChatStore((s) => s.turns)
 
     return (
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-6">
+        // role="log" + aria-live make new turns announce to screen readers.
+        // aria-relevant="additions" limits announcements to whole new turns — it suppresses
+        // the token-by-token text mutations of the streaming insight (the LiveAnnouncer reads
+        // the finished insight instead).
+        <div
+            role="log"
+            aria-label="Conversation"
+            aria-live="polite"
+            aria-relevant="additions"
+            className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-6"
+        >
             {turns.map((turn, i) => {
                 const isLast = i === turns.length - 1
                 return (

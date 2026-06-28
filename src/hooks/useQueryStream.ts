@@ -1,6 +1,7 @@
 import { useChatStore } from '@/store/useChatStore'
 import { useConversations } from '@/hooks/useConversations'
 import { API_BASE } from '@/lib/api'
+import { createSSEParser } from '@/lib/sse'
 import type { ReasoningStep } from '@/types'
 
 // Only one stream runs at a time — a module-level controller lets a Stop button
@@ -24,6 +25,9 @@ export function useQueryStream() {
         setError(null)
         appendUserTurn(question)   // optimistic: a pending assistant turn appears immediately
 
+        // A brand-new chat carries its dataset scope; follow-ups inherit it server-side.
+        const datasetId = conversationId ? null : (useChatStore.getState().activeDataset?.id ?? null)
+
         const reasoningSteps: ReasoningStep[] = []
         let errored = false
         const controller = new AbortController()
@@ -33,7 +37,7 @@ export function useQueryStream() {
             const response = await fetch(`${API_BASE}/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question, conversation_id: conversationId ?? null }),
+                body: JSON.stringify({ question, conversation_id: conversationId ?? null, dataset_id: datasetId }),
                 signal: controller.signal,
             })
             if (!response.ok || !response.body) {
@@ -42,50 +46,42 @@ export function useQueryStream() {
 
             const reader = response.body.getReader()
             const decoder = new TextDecoder()
-            let buffer = ''
+            const parser = createSSEParser()
+
+            const handleFrame = (event: string, dataLine: string) => {
+                const payload = JSON.parse(dataLine)
+
+                if (event === 'meta') {
+                    setActiveConversation(payload.conversation_id, question)
+                } else if (event === 'reasoning') {
+                    reasoningSteps.push({ title: payload.message, tool: payload.step })
+                    patchLastTurn({ reasoningSteps: [...reasoningSteps] })
+                } else if (event === 'summary_token') {
+                    // Prose insight streams in token-by-token before the charts arrive.
+                    appendSummaryToken(payload.token)
+                } else if (event === 'dashboard') {
+                    // Summary was already streamed via summary_token — only patch charts
+                    // here so we don't clobber the revealed text.
+                    patchLastTurn({ widgets: payload.widgets })
+                } else if (event === 'message') {
+                    // Conversational reply (greeting / clarification / decline / no-data)
+                    patchLastTurn({ summary: payload.message })
+                } else if (event === 'error') {
+                    errored = true
+                    setError(payload.message)
+                    setLastTurnStatus('error', payload.message)
+                }
+            }
 
             while (true) {
                 const { done, value } = await reader.read()
                 if (done) break
-
-                buffer += decoder.decode(value, { stream: true })
-                const chunks = buffer.split('\n\n')
-                buffer = chunks.pop() ?? ''
-
-                for (const chunk of chunks) {
-                    if (!chunk.trim()) continue
-
-                    let eventType = ''
-                    let dataLine = ''
-                    for (const line of chunk.split('\n')) {
-                        if (line.startsWith('event: ')) eventType = line.slice(7)
-                        if (line.startsWith('data: ')) dataLine = line.slice(6)
-                    }
-                    if (!eventType || !dataLine) continue
-                    const payload = JSON.parse(dataLine)
-
-                    if (eventType === 'meta') {
-                        setActiveConversation(payload.conversation_id, question)
-                    } else if (eventType === 'reasoning') {
-                        reasoningSteps.push({ title: payload.message, tool: payload.step })
-                        patchLastTurn({ reasoningSteps: [...reasoningSteps] })
-                    } else if (eventType === 'summary_token') {
-                        // Prose insight streams in token-by-token before the charts arrive.
-                        appendSummaryToken(payload.token)
-                    } else if (eventType === 'dashboard') {
-                        // Summary was already streamed via summary_token — only patch charts
-                        // here so we don't clobber the revealed text.
-                        patchLastTurn({ widgets: payload.widgets })
-                    } else if (eventType === 'message') {
-                        // Conversational reply (greeting / clarification / decline / no-data)
-                        patchLastTurn({ summary: payload.message })
-                    } else if (eventType === 'error') {
-                        errored = true
-                        setError(payload.message)
-                        setLastTurnStatus('error', payload.message)
-                    }
+                for (const frame of parser.push(decoder.decode(value, { stream: true }))) {
+                    handleFrame(frame.event, frame.data)
                 }
             }
+            // Drain any final frame that wasn't terminated by a blank line.
+            for (const frame of parser.flush()) handleFrame(frame.event, frame.data)
 
             if (!errored) setLastTurnStatus('complete')
             await refresh()   // new turn is persisted — reflect it in the sidebar
